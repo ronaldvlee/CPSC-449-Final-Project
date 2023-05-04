@@ -64,8 +64,19 @@ async def add_book(book: Book):
 
 # PUT /books/{book_id}: Updates an existing book by ID
 @app.put("/books/{book_id}")
-async def update_book(book_id: int):
-    return
+async def update_book(book_id: str, book: Book):
+    # Convert the book_id parameter to a ObjectId
+    object_id = ObjectId(book_id)
+
+    # Update the corresponding book in the database
+    update_result = collection.update_one({"_id": object_id}, {"$set": book.dict()})
+
+    # Check if the book was found and updated
+    if update_result.modified_count == 1:
+        return {"message": "Book updated successfully"}
+    else:
+        return {"message": "Book not found"}
+
 
 # DELETE /books/{book_id}: Deletes a book from the store by ID
 @app.delete("/books/{book_id}")
