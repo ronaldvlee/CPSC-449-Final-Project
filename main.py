@@ -2,7 +2,7 @@ from typing import Optional
 from bson import ObjectId
 
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from pymongo import MongoClient
 
@@ -16,7 +16,21 @@ class Book(BaseModel):
     price: float
     stock: int
 
-# Custom Encoder to serialize ObjectId
+    # Validation for price to keep it as positive
+    @validator('price')
+    def price_must_be_positive(cls, value):
+        if value <= 0:
+            raise ValueError('Price must be positive')
+        return value
+
+    # Validation for stock to keep it as positive
+    @validator('stock')
+    def stock_must_be_positive(cls, value):
+        if value < 0:
+            raise ValueError('Stock must be non-negative')
+        return value
+
+# Custom Encoder to serialize ObjectId, since json.dumps doesn't know what to do with the ObjectId object.
 class CustomEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, ObjectId):
@@ -24,13 +38,10 @@ class CustomEncoder(json.JSONEncoder):
         return super().default(o)
 
 app = FastAPI()
-client = MongoClient("localhost", 27017)
+client = MongoClient('mongodb://localhost:27017')
 collection = client.get_database('books').get_collection('books')
 
 # Asynchronous Programming: All database operations should be done asynchronously to ensure the API remains responsive and performant.
-@app.get("/")
-async def read_root():
-    return {"message": "Hello World"}
 
 # GET /books: Retrieves a list of all books in the store
 @app.get("/books")
@@ -57,7 +68,8 @@ async def retrieve_book(book_id: str):
 # POST /books: Adds a new book to the store
 @app.post("/books")
 async def add_book(book: Book):
-    book_dict = book.dict()
+    book_dict = book.dict() # Since the parameter we are passing is type Book, there is no need for 
+                            # additional validation, as pydantic already implements this for us.
     collection.insert_one(book_dict)
     return {"message": "Book created successfully"}
 
@@ -116,9 +128,5 @@ async def search_books(title: Optional[str] = None, author: Optional[str] = None
     for result in search_results:
         book = Book(**result)
         books.append(book)
-
-    # Check if any books were found
-    # if len(books) == 0:
-    #     raise HTTPException(status_code=404, detail="No books found")
 
     return books
