@@ -46,8 +46,14 @@ async def retrieve_all_books():
 
 # GET /books/{book_id}: Retrieves a specific book by ID
 @app.get("/books/{book_id}")
-async def retrieve_book(book_id: int):
-    return {"book_id": book_id}
+async def retrieve_book(book_id: str):
+    documents = []
+    cursor = collection.find({'_id': ObjectId(book_id)})
+
+    for document in cursor:
+        documents.append(json.dumps(document, cls=CustomEncoder))
+
+    return documents
 
 # POST /books: Adds a new book to the store
 @app.post("/books")
