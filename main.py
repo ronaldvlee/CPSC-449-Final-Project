@@ -8,6 +8,11 @@ from pymongo import MongoClient
 
 import json
 
+# Load the config file
+
+with open("config.json") as json_data_file:
+    cfg = json.load(json_data_file)
+
 # Book Model: You will create a Pydantic model for the book data that includes the following fields: title, author, description, price, and stock.
 class Book(BaseModel):
     title: str
@@ -38,8 +43,8 @@ class CustomEncoder(json.JSONEncoder):
         return super().default(o)
 
 app = FastAPI()
-client = MongoClient('mongodb://localhost:27017')
-collection = client.get_database('books').get_collection('books')
+client = MongoClient(cfg['mongodb']['connection_str'])
+collection = client.get_database(cfg['mongodb']['database_name']).get_collection(cfg['mongodb']['collection_name'])
 
 # Asynchronous Programming: All database operations should be done asynchronously to ensure the API remains responsive and performant.
 
