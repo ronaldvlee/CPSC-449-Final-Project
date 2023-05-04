@@ -57,8 +57,10 @@ async def retrieve_book(book_id: str):
 
 # POST /books: Adds a new book to the store
 @app.post("/books")
-async def add_book():
-    return
+async def add_book(book: Book):
+    book_dict = book.dict()
+    collection.insert_one(book_dict)
+    return {"message": "Book created successfully"}
 
 # PUT /books/{book_id}: Updates an existing book by ID
 @app.put("/books/{book_id}")
