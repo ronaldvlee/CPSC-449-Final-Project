@@ -1,9 +1,13 @@
 from typing import Union
+from bson import ObjectId
 
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-import pymongo
+from pymongo import MongoClient
+
+
+import json
 
 # Book Model: You will create a Pydantic model for the book data that includes the following fields: title, author, description, price, and stock.
 class Book(BaseModel):
@@ -13,7 +17,16 @@ class Book(BaseModel):
     price: float
     stock: int
 
+# Custom Encoder to serialize ObjectId
+class CustomEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)
+        return super().default(o)
+
 app = FastAPI()
+client = MongoClient("localhost", 27017)
+collection = client.get_database('books').get_collection('books')
 
 # Asynchronous Programming: All database operations should be done asynchronously to ensure the API remains responsive and performant.
 @app.get("/")
@@ -23,7 +36,13 @@ async def read_root():
 # GET /books: Retrieves a list of all books in the store
 @app.get("/books")
 async def retrieve_all_books():
-    return
+    documents = []
+    cursor = collection.find({})
+
+    for document in cursor:
+        documents.append(json.dumps(document, cls=CustomEncoder))
+
+    return documents
 
 # GET /books/{book_id}: Retrieves a specific book by ID
 @app.get("/books/{book_id}")
