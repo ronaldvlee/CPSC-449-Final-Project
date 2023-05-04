@@ -131,7 +131,7 @@ async def search_books(title: Optional[str] = None, author: Optional[str] = None
     # Convert the search results to a list of Book objects
     books = []
     for result in search_results:
-        book = Book(**result)
+        book = json.dumps(result, cls=CustomEncoder)
         books.append(book)
 
     return books
