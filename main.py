@@ -52,7 +52,7 @@ collection = client.get_database(cfg['mongodb']['database_name']).get_collection
 @app.get("/books")
 async def retrieve_all_books():
     documents = []
-    cursor = collection.find({})
+    cursor = await collection.find({})
 
     for document in cursor:
         documents.append(json.dumps(document, cls=CustomEncoder))
@@ -63,7 +63,7 @@ async def retrieve_all_books():
 @app.get("/books/{book_id}")
 async def retrieve_book(book_id: str):
     documents = []
-    cursor = collection.find({'_id': ObjectId(book_id)})
+    cursor = await collection.find({'_id': ObjectId(book_id)})
 
     for document in cursor:
         documents.append(json.dumps(document, cls=CustomEncoder))
@@ -75,7 +75,7 @@ async def retrieve_book(book_id: str):
 async def add_book(book: Book):
     book_dict = book.dict() # Since the parameter we are passing is type Book, there is no need for 
                             # additional validation, as pydantic already implements this for us.
-    collection.insert_one(book_dict)
+    await collection.insert_one(book_dict)
     return {"message": "Book created successfully"}
 
 # PUT /books/{book_id}: Updates an existing book by ID
@@ -85,7 +85,7 @@ async def update_book(book_id: str, book: Book):
     object_id = ObjectId(book_id)
 
     # Update the corresponding book in the database
-    update_result = collection.update_one({"_id": object_id}, {"$set": book.dict()})
+    update_result = await collection.update_one({"_id": object_id}, {"$set": book.dict()})
 
     # Check if the book was found and updated
     if update_result.modified_count == 1:
@@ -101,7 +101,7 @@ async def delete_book(book_id: str):
     object_id = ObjectId(book_id)
 
     # Delete the corresponding book from the database
-    delete_result = collection.delete_one({"_id": object_id})
+    delete_result = await collection.delete_one({"_id": object_id})
 
     # Check if the book was found and deleted
     if delete_result.deleted_count == 1:
@@ -126,7 +126,7 @@ async def search_books(title: Optional[str] = None, author: Optional[str] = None
         query["price"] = {"$gte": min_price, "$lte": max_price}
 
     # Execute the search query and retrieve the results
-    search_results = collection.find(query)
+    search_results = await collection.find(query)
 
     # Convert the search results to a list of Book objects
     books = []
