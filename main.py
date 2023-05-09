@@ -54,6 +54,8 @@ collection = db[cfg['mongodb']['collection_name']]
 async def retrieve_all_books():
     documents = []
     cursor = collection.find({}) # find() does no I/O and does not require an await expression
+                                 # the query is actually executed on the server when executing
+                                 # an async for loop
                                  # source: https://motor.readthedocs.io/en/stable/tutorial-asyncio.html#querying-for-more-than-one-document
 
     async for document in cursor:
@@ -124,7 +126,8 @@ async def search_books(title: Optional[str] = None, author: Optional[str] = None
         query["price"] = {"$gte": min_price, "$lte": max_price}
 
     # Execute the search query and retrieve the results
-    search_results = collection.find(query)
+    search_results = collection.find(query) # Same thing here, the query not executed until 
+                                            # the async for so no await is needed
 
     # Convert the search results to a list of Book objects
     books = []
