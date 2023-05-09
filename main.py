@@ -43,9 +43,9 @@ class CustomEncoder(json.JSONEncoder):
         return super().default(o)
 
 app = FastAPI()
-client = AsyncIOMotorClient('mongodb://localhost:27017/')
-db = client['books']
-collection = db['books']
+client = AsyncIOMotorClient(cfg['mongodb']['connection_str'])
+db = client[cfg['mongodb']['database_name']]
+collection = db[cfg['mongodb']['collection_name']]
 
 # Asynchronous Programming: All database operations should be done asynchronously to ensure the API remains responsive and performant.
 
