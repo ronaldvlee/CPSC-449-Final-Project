@@ -36,7 +36,7 @@ class Book(BaseModel):
             raise ValueError('Stock must be non-negative')
         return value
     
-    # Validation for stock to keep it as positive
+    # Validation for sales to keep it as positive
     @validator('sales')
     def sales_must_be_positive(cls, value):
         if value < 0:
@@ -144,3 +144,51 @@ async def search_books(title: Optional[str] = None, author: Optional[str] = None
         books.append(book)
 
     return books
+
+
+# Aggregation
+
+@app.get("/total")
+async def get_total_books():
+    try:
+        pipeline = [{"$group": {"_id": None, "total": {"$sum": "$stock"}}}]
+        result = await collection.aggregate(pipeline).to_list(1)
+        total_books = result[0]["total"]
+        return {"total_books": total_books}
+    except IndexError:
+        return {"error": "No books found in the database."}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Retrieve data of the top 5 best selling books
+@app.get("/bestsellers")
+async def get_bestsellers():
+    # Define the aggregation pipeline
+    pipeline = [
+        { "$sort": { "sales": -1 } },
+        { "$limit": 5 },
+        { "$project": { "_id": 0, "title": 1, "author": 1, "description": 1, "price": 1, "stock": 1, "sales": 1 } }
+    ]
+    # Execute the aggregation and return the results
+    try:
+        results = await collection.aggregate(pipeline).to_list(None)
+        return {"bestsellers": results}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# Retrieve data of the top 5 authors with the most books in the store
+@app.get("/top_authors")
+async def get_top_authors():
+    # Define the aggregation pipeline
+    pipeline = [
+        {"$group": {"_id": "$author", "total_stock": {"$sum": "$stock"}}},
+        {"$sort": {"total_stock": -1}},
+        {"$limit": 5}
+    ]
+    try:
+        # Execute the aggregation and return the results
+        top_authors = await collection.aggregate(pipeline).to_list(None)
+        return {"top_authors": top_authors}
+    except Exception as e:
+        return {"error": str(e)}
