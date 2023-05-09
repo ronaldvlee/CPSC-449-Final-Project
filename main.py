@@ -20,6 +20,7 @@ class Book(BaseModel):
     description: str
     price: float
     stock: int
+    sales: int
 
     # Validation for price to keep it as positive
     @validator('price')
@@ -33,6 +34,13 @@ class Book(BaseModel):
     def stock_must_be_positive(cls, value):
         if value < 0:
             raise ValueError('Stock must be non-negative')
+        return value
+    
+    # Validation for stock to keep it as positive
+    @validator('sales')
+    def sales_must_be_positive(cls, value):
+        if value < 0:
+            raise ValueError('Sales must be non-negative')
         return value
 
 # Custom Encoder to serialize ObjectId, since json.dumps doesn't know what to do with the ObjectId object.
