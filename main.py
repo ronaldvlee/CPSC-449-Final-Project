@@ -192,3 +192,17 @@ async def get_top_authors():
         return {"top_authors": top_authors}
     except Exception as e:
         return {"error": str(e)}
+
+
+# Indexing
+# Create a function startup() to be called when the app starts up, in which we create indexes for the collection
+@app.on_event("startup")
+async def startup():
+    # Create an index on the "title" field
+    await collection.create_index('title')
+
+    # Create a compound index on the "author" and "stock" fields
+    await collection.create_index([('author', 1), ('stock', -1)])
+
+    # Create a descending index on the "sales" field
+    await collection.create_index([('sales', -1)])
