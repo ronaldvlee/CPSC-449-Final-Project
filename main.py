@@ -65,26 +65,33 @@ async def retrieve_all_books():
                                  # the query is actually executed on the server when executing
                                  # an async for loop
                                  # source: https://motor.readthedocs.io/en/stable/tutorial-asyncio.html#querying-for-more-than-one-document
+    try:
+        async for document in cursor:
+            documents.append(json.dumps(document, cls=CustomEncoder))
+    except Exception as e:
+        return {'error': str(e)}
 
-    async for document in cursor:
-        documents.append(json.dumps(document, cls=CustomEncoder))
-
-    return documents
+    return {'books': documents}
 
 # GET /books/{book_id}: Retrieves a specific book by ID
 @app.get("/books/{book_id}")
 async def retrieve_book(book_id: str):
-    cursor = await collection.find_one(ObjectId(book_id))
-
-    return [str(cursor).replace('\'', '\"')] # This is done to have parity with the output of json.dumps
+    try: 
+        cursor = await collection.find_one(ObjectId(book_id))
+        return {'books': [str(cursor).replace('\'', '\"')]} # This is done to have parity with the output of json.dumps
+    except Exception as e:
+        return {'error': str(e)}
 
 # POST /books: Adds a new book to the store
 @app.post("/books")
 async def add_book(book: Book):
     book_dict = book.dict() # Since the parameter we are passing is type Book, there is no need for 
                             # additional validation, as pydantic already implements this for us.
-    await collection.insert_one(book_dict)
-    return {"message": "Book created successfully"}
+    try: 
+        await collection.insert_one(book_dict)
+        return {"message": "Book created successfully"}
+    except Exception as e:
+        return {"error": str(e)}
 
 # PUT /books/{book_id}: Updates an existing book by ID
 @app.put("/books/{book_id}")
@@ -93,7 +100,10 @@ async def update_book(book_id: str, book: Book):
     object_id = ObjectId(book_id)
 
     # Update the corresponding book in the database
-    update_result = await collection.update_one({"_id": object_id}, {"$set": book.dict()})
+    try:
+        update_result = await collection.update_one({"_id": object_id}, {"$set": book.dict()})
+    except Exception as e:
+        return {"error": str(e)}
 
     # Check if the book was found and updated
     if update_result.modified_count == 1:
@@ -109,7 +119,10 @@ async def delete_book(book_id: str):
     object_id = ObjectId(book_id)
 
     # Delete the corresponding book from the database
-    delete_result = await collection.delete_one({"_id": object_id})
+    try:
+        delete_result = await collection.delete_one({"_id": object_id})
+    except Exception as e:
+        return {"error": str(e)}
 
     # Check if the book was found and deleted
     if delete_result.deleted_count == 1:
@@ -139,11 +152,14 @@ async def search_books(title: Optional[str] = None, author: Optional[str] = None
 
     # Convert the search results to a list of Book objects
     books = []
-    async for result in search_results:
-        book = json.dumps(result, cls=CustomEncoder)
-        books.append(book)
+    try:
+        async for result in search_results:
+            book = json.dumps(result, cls=CustomEncoder)
+            books.append(book)
+    except Exception as e:
+        return {'error': str(e)}
 
-    return books
+    return {'books': books}
 
 
 # Aggregation
